@@ -60,11 +60,11 @@ contract UpsideLending {
         uint USDC_PRICE = priceOraclce.getPrice(address(usdc));
         uint TOKEN_PRICE = priceOraclce.getPrice(address(_token));
         
-        uint user_collateral = ETH_PRICE * deposit_ether[msg.sender] + USDC_PRICE * deposit_usdc[msg.sender];
+        uint user_deposited_price = ETH_PRICE * deposit_ether[msg.sender] + USDC_PRICE * deposit_usdc[msg.sender];
         uint user_borrow_price = TOKEN_PRICE * _amount;
         uint user_current_debt_price = USDC_PRICE * user_borrowed_usdc[msg.sender];
         emit logging(user_borrow_price, user_borrowed_usdc[msg.sender]);
-        require(user_collateral >= (user_borrow_price + user_current_debt_price) * 2, "INSUFFICIENT_COLLATERAL");
+        require(user_deposited_price >= (user_borrow_price + user_current_debt_price) * 2, "INSUFFICIENT_COLLATERAL");
         
         user_borrowed_usdc[msg.sender] += _amount;
         total_deposited[address(usdc)] -= _amount;
@@ -83,15 +83,34 @@ contract UpsideLending {
     }
 
     function withdraw(address _token, uint256 _amount) external {
+        update(msg.sender);
+
         uint ETH_PRICE = priceOraclce.getPrice(address(0));
         uint USDC_PRICE = priceOraclce.getPrice(address(usdc));
-        uint TOKEN_PRICE = priceOraclce.getPrice(address(_token));
         
-        
+        uint user_deposited_price = ETH_PRICE * deposit_ether[msg.sender] + USDC_PRICE * deposit_usdc[msg.sender];
+        uint user_current_debt_price = USDC_PRICE * user_borrowed_usdc[msg.sender];        
+        uint user_withdraw_value = _amount * (_token == address(0) ? ETH_PRICE : USDC_PRICE);
+
+        require(user_deposited_price - user_withdraw_value >= user_current_debt_price * 100 / 75, "LTV_FAILED");
+        if (_token == address(0))
+        {
+            payable(msg.sender).call{value: _amount}("");
+        }
+        else 
+        {
+            require(IERC20(_token).balanceOf(address(this)) > _amount, "INSUFFICIENT_VAULT_BALANCE");
+            IERC20(_token).transfer(msg.sender, _amount);
+        }
     }
 
-    function getAccruedSupplyAmount(address _token) external returns (uint256 accruedSupply) {}
-    function liquidate() external {}
+    function getAccruedSupplyAmount(address _token) external returns (uint256 accruedSupply) {
+
+    }
+
+    function liquidate(address _user, address _token, uint256 _amount) external {
+        
+    }
 
     function update(address _user) internal {
         uint last_update_block = last_update[_user];
