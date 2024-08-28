@@ -60,7 +60,15 @@ contract UpsideLending {
         IERC20(_token).transfer(msg.sender, _amount);
     }
 
-    function repay() external {}
+    function repay(address _token, uint256 _amount) external { // 상환
+        require(user_borrowed_usdc[msg.sender] >= _amount, "EXCEEDS_AMOUNT_TOKEN_REPAY");
+        require(IERC20(_token).balanceOf(msg.sender) >= _amount, "USER_INSUFFICIENT_TOKEN");
+        require(IERC20(_token).allowance(msg.sender, address(this)) >= _amount, "INSUFFICIENT_ALLOWANCE");
+
+        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        user_borrowed_usdc[msg.sender] -= _amount;
+    }
+    
     function withdraw(address _to, uint256 _amount) external {}
     function getAccruedSupplyAmount(address _token) external returns (uint256 accruedSupply) {}
     function liquidate() external {}
