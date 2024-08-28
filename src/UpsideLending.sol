@@ -95,21 +95,49 @@ contract UpsideLending {
         require(user_deposited_price - user_withdraw_value >= user_current_debt_price * 100 / 75, "LTV_FAILED");
         if (_token == address(0))
         {
+            require(address(this).balance >= _amount, "INSUFFICIENT_VAULT_BALANCE");
             payable(msg.sender).call{value: _amount}("");
         }
         else 
         {
-            require(IERC20(_token).balanceOf(address(this)) > _amount, "INSUFFICIENT_VAULT_BALANCE");
+            require(IERC20(_token).balanceOf(address(this)) >= _amount, "INSUFFICIENT_VAULT_BALANCE");
             IERC20(_token).transfer(msg.sender, _amount);
         }
     }
 
-    function getAccruedSupplyAmount(address _token) external returns (uint256 accruedSupply) {
+    function liquidate(address _user, address _token, uint256 _amount) external {
+        update(_user);
+        // 청산 가능성 판단 -> 청산 한도 체크 -> 청산 보상
+        uint ETH_PRICE = priceOraclce.getPrice(address(0));
+        uint USDC_PRICE = priceOraclce.getPrice(address(usdc));
+        
+        uint user_deposited_price = ETH_PRICE * deposit_ether[_user] + USDC_PRICE * deposit_usdc[_user];
+        uint user_current_debt_price = USDC_PRICE * user_borrowed_usdc[_user];    
 
+        emit logging(user_deposited_price, user_current_debt_price);
+        
+        uint LTV = (user_current_debt_price * 100) / user_deposited_price;
+        require(LTV >= 75, "HEALTHY_LOAN");
+
+        uint borrowed_amount =  user_deposited_price - user_current_debt_price;
+        
+        uint max_liquidatable = user_borrowed_usdc[_user] * 25 / 100;
+        if (user_borrowed_usdc[_user] < 100)
+            max_liquidatable = user_borrowed_usdc[_user];
+
+        require(max_liquidatable >= _amount, "EXCEEDS_MAX_LIQUIDATABLE_AMOUNT");
+        
+        uint liquidatable_collateral = (USDC_PRICE * _amount) / ETH_PRICE;
+        deposit_ether[_user] -= liquidatable_collateral;
+        user_borrowed_usdc[_user] -= _amount;
+        (bool suc, ) = msg.sender.call{value: liquidatable_collateral}("");                
+        require(suc, "send ether failed");
+        
+        IERC20(usdc).transferFrom(msg.sender, address(this), _amount);
     }
 
-    function liquidate(address _user, address _token, uint256 _amount) external {
-        
+    function getAccruedSupplyAmount(address _token) external returns (uint256 accruedSupply) {
+            
     }
 
     function update(address _user) internal {

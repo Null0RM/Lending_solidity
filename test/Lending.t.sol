@@ -652,6 +652,7 @@ contract Testx is Test {
         vm.stopPrank();
 
         upsideOracle.setPrice(address(0x0), (4000 * 66 / 100) * 1e18); // drop price to 66%
+        // 청산 가능 금액에 도달
         usdc.transfer(user3, 3000 ether);
 
         vm.startPrank(user3);
