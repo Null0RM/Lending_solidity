@@ -89,20 +89,20 @@ deposit해두었던 자산을 출금하는 함수
 청산 threshold = 75%. 즉, deposit한 자산 대비 부채의 비율이 75%를 넘어가게 된다면 청산을 실행시킬 수 있음.   
 청산은 한 번 실행할 때 borrow한 총량의 25%까지만 청산을 실행할 수 있으며, 이 때는 예치된 담보를 팔아서 user에게 해당 양 만큼의 담보를 전송해줘야 함. borrow한 총량이 100 미만이 되면, 100%를 청산시킬 수 있음.
 
-- 입력
-    _user: 청산시킬 user 의 주소
-    _token: 청산시킬 자산의 종류
-    _amount: 청산시킬 자산의 양
+- 입력   
+    _user: 청산시킬 user 의 주소   
+    _token: 청산시킬 자산의 종류   
+    _amount: 청산시킬 자산의 양   
 
-- 조건
-    _user의 deposit한 총 금액 대비 부채 비율이 LTV를 넘지 않아야 함 (<= 75) -> 청산 실행 가능    
-    _amount가 청산 가능한 최대 금액을 넘지않아야 함
+- 조건   
+    _user의 deposit한 총 금액 대비 부채 비율이 LTV를 넘지 않아야 함 (<= 75) -> 청산 실행 가능       
+    _amount가 청산 가능한 최대 금액을 넘지않아야 함    
 
-- 결과
-    ETH 전송
-    _user의 borrowed usdc 감소 -> 현재까지 이자 계산 및 저장 (이자 감산)
-    _user의 deposited ether 감소
-    msg.sender가 구매한 만큼의 usdc를 transferFrom
+- 결과   
+    ETH 전송   
+    _user의 borrowed usdc 감소 -> 현재까지 이자 계산 및 저장 (이자 감산)   
+    _user의 deposited ether 감소   
+    msg.sender가 구매한 만큼의 usdc를 transferFrom   
 
 >### getAccruedSupplyAmount
 
